@@ -304,6 +304,7 @@
     </entry>
     <entry key="test/mailers/previews">
       <value>file://$MODULE_DIR$/../shared-todo-api\test/mailers/previews</value>
+      <value>file:///home/emiliano/shared-todo-api/spec/mailers/previews</value>
       <value>file:///home/emiliano/shared-todo-api/test/mailers/previews</value>
     </entry>
     <entry key="tmp">

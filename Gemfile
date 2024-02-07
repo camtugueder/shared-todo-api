@@ -37,6 +37,7 @@ gem "bootsnap", require: false
 
 gem "acts_as_list"
 gem 'active_model_serializers', '~> 0.10.0'
+gem 'rack-cors'
 
 group :development, :test do
   # Use RSpec for testing
