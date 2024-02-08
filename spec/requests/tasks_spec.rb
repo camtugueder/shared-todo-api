@@ -11,28 +11,55 @@ RSpec.describe "Tasks", type: :request do
   let!(:task3) { create(:task, friend: friend1, position: 3) }
   let!(:task4) { create(:task, friend: friend2, position: 1) }
   let!(:task5) { create(:task, friend: friend2, position: 2) }
+  let!(:task6) { create(:task, friend: friend1, position: 4) }
+
 
   describe 'PUT /tasks/:id' do
-    let(:valid_attributes) { { friend_id: friend2.id, position: 2 } }
+    describe 'moving a task between friends' do
+      context 'to a new friend with enough tasks to maintain the original position' do
+        before do
+          put task_path(task2), params: { task: { friend_id: friend2.id, position: 2 } }
+          [task1, task2, task3, task4, task5].each(&:reload)
+        end
 
-    it 'moves a task from one friend to another and updates positions correctly' do
-      # Update task2 to move it from friend1 to friend2
-      put "/tasks/#{task2.id}", params: { task: valid_attributes }
+        it 'updates the task’s friend and maintains its position' do
+          expect(task2.friend).to eq(friend2)
+          expect(task2.position).to eq(2)
+        end
 
-      expect(response).to have_http_status(:ok)
-      task1.reload
-      task2.reload
-      task3.reload
-      task4.reload
-      task5.reload
+        it 'adjusts the positions of the remaining tasks in both friends lists' do
+          expect(task1.position).to eq(1)
+          expect(task3.position).to eq(2) # Adjusted due to task2 moving
+          expect(task4.position).to eq(1)
+          expect(task5.position).to eq(3) # Adjusted to accommodate task2
+        end
+      end
 
-      # Verify the positions after moving task2
-      expect(task1.position).to eq(1)   # Position of task1 should remain unchanged
-      expect(task2.position).to eq(2)   # task2 is now the second task of friend2
-      expect(task2.friend).to eq(friend2)   # Ensure task2 is associated with friend2
-      expect(task3.position).to eq(2)   # Position of task3 should be shifted to 2
-      expect(task4.position).to eq(1)   # Position of task4 should remain unchanged
-      expect(task5.position).to eq(3)   # Position of task5 should be shifted to 3 (task2 is now in position 2)
+      context 'to a new friend where the original position is preserved' do
+        before do
+          put task_path(task3), params: { task: { friend_id: friend2.id } }
+          [task1, task2, task3, task4, task5].each(&:reload)
+        end
+
+        it 'inserts the task at the same position in the new list' do
+          expect(task3.friend_id).to eq(friend2.id)
+          expect(task3.position).to eq(3)
+        end
+      end
+
+      context 'to a new friend where the original position exceeds the number of items' do
+        before do
+          # Moving task6 from friend1 to friend2, where friend2 originally has 2 tasks, testing the boundary condition
+          put task_path(task6), params: { task: { friend_id: friend2.id } }
+          [task1, task2, task3, task4, task5, task6].each(&:reload)
+        end
+
+        it 'places the task at the last position in the new list because the original position exceeds the new list size' do
+          expect(task6.friend_id).to eq(friend2.id)
+          # Task6 should be placed at the last position because its original position (4) is more than friend2's task count before the move
+          expect(task6.position).to eq(3) # Adjusted to be last in friend2's list
+        end
+      end
     end
   end
 end
